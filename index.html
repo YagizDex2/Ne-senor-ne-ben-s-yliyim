@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Yüksek Tavan Sensör Görüş Alanı</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            margin: 20px;
+        }
+        .controls {
+            margin: 20px;
+        }
+        .legend {
+            position: fixed;
+            right: 20px;
+            top: 60px;
+            margin: 0;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 10px;
+            border: 1px solid #ccc;
+            z-index: 1000;
+        }
+        .legend-item {
+            margin: 5px;
+        }
+        .legend-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            display: none;
+        }
+        .tabs {
+            margin: 20px;
+        }
+        
+        .tab-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            margin-right: 5px;
+        }
+        
+        .tab-button.active {
+            background: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .container {
+            display: flex;
+            align-items: flex-start;
+            margin: 20px;
+        }
+        
+        .graph-container {
+            flex: 1;
+        }
+        
+        .environment-box {
+            position: fixed;
+            right: 20px;
+            top: 140px;
+            margin: 0;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .environment-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .environment-box p {
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .sensor-info-box {
+            position: fixed;
+            left: calc(50% - 1340px);
+            top: 195px;
+            transform: none;
+            margin: 0;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            max-height: 600px;
+            overflow-y: auto;
+            width: 400px;
+            z-index: 1000;
+            padding-bottom: 70px;
+            position: relative;
+        }
+        
+        .sensor-info-box h3 {
+            margin: 0 0 15px 0;
+            font-size: 20px;
+            color: #333;
+        }
+        
+        .sensor-info-box .sensor-title {
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+            color: #333;
+            font-size: 18px;
+        }
+        
+        .sensor-info-box table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        
+        .sensor-info-box td {
+            padding: 5px 8px;
+        }
+        
+        .sensor-info-box .min-max {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .sensor-info-box .min-max p {
+            margin: 2px 0;
+            color: #666;
+        }
+
+        .line-style-switch {
+            margin: 10px 20px;
+        }
+
+        .line-style-switch label {
+            margin-right: 15px;
+            cursor: pointer;
+        }
+
+        .min-value {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .max-value {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .min-max-summary {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0 15px 0;
+            padding: 5px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+
+        .measurement-status {
+            color: #e74c3c;
+            font-style: italic;
+            margin: 10px 0;
+            padding: 5px;
+            display: inline-block;
+            background: #fff3f3;
+            border-radius: 4px;
+        }
+
+        .sensor-info-box td[contenteditable="true"] {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 2px 5px;
+            border-radius: 3px;
+            cursor: text;
+        }
+
+        .sensor-info-box td[contenteditable="true"]:focus {
+            background-color: #fff;
+            border-color: #80bdff;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+
+        .confirmation-box {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            background: rgba(40, 167, 69, 0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            display: none;
+            animation: fadeOut 2s ease-in-out;
+            z-index: 1000;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .reset-button {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .reset-button:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="tabs">
+        <button class="tab-button active" onclick="switchTab('spacer')">Yüksek Tavan (S)</button>
+        <button class="tab-button" onclick="switchTab('no-spacer')">Yüksek Tavan (S-)</button>
+        <button class="tab-button" onclick="switchTab('standard')">Standart</button>
+        <button class="tab-button" onclick="switchTab('corridor')">Koridor</button>
+        <button class="tab-button" onclick="switchTab('wide')">Geniş Alan</button>
+    </div>
+
+    <div class="line-style-switch">
+        <label>
+            <input type="radio" name="lineStyle" value="curved" checked onchange="updateLineStyle(this.value)">
+            Oval Çizgi
+        </label>
+        <label>
+            <input type="radio" name="lineStyle" value="straight" onchange="updateLineStyle(this.value)">
+            Düz Çizgi
+        </label>
+    </div>
+
+    <div class="container">
+        <div class="graph-container">
+            <div id="spacer" class="tab-content active">
+                <h2>Yüksek Tavan Sensörü (S)</h2>
+                <canvas id="sensorCanvas" width="900" height="900"></canvas>
+            </div>
+
+            <div id="no-spacer" class="tab-content">
+                <h2>Yüksek Tavan Sensörü (S-)</h2>
+                <canvas id="sensorCanvas2" width="900" height="900"></canvas>
+            </div>
+
+            <div id="standard" class="tab-content">
+                <h2>Standart Sensör</h2>
+                <canvas id="sensorCanvas3" width="900" height="900"></canvas>
+            </div>
+
+            <div id="corridor" class="tab-content">
+                <h2>Koridor Sensörü</h2>
+                <canvas id="sensorCanvas4" width="900" height="900"></canvas>
+            </div>
+
+            <div id="wide" class="tab-content">
+                <h2>Geniş Alan Sensörü</h2>
+                <canvas id="sensorCanvas5" width="900" height="900"></canvas>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <span class="legend-color" style="background: rgba(255, 0, 0, 0.3);"></span>
+                <span>Dikey Yaklaşım</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color" style="background: rgba(0, 0, 255, 0.3);"></span>
+                <span>Teğet Yaklaşım</span>
+            </div>
+        </div>
+
+        <div class="environment-box">
+            <h3>Ortam Koşulları</h3>
+            <p>Sıcaklık: 17,3°C</p>
+            <p>Işık Şiddeti: 27 lux</p>
+            <p>Montaj Yüksekliği: 2,5m</p>
+        </div>
+
+        <div class="sensor-info-box">
+            <h3>Sensör Ölçümleri</h3>
+            
+            <div class="sensor-section">
+                <div class="sensor-title">Yüksek Tavan (S)</div>
+                <table>
+                    <tr><td>0°/360°:</td><td>D: 9m</td><td>T: 13m</td></tr>
+                    <tr><td>45°:</td><td>D: 7m</td><td>T: 14m</td></tr>
+                    <tr><td>90°:</td><td>D: 10m</td><td>T: 14m</td></tr>
+                    <tr><td>135°:</td><td>D: 7m</td><td>T: 13m</td></tr>
+                    <tr><td>180°:</td><td>D: 9m</td><td>T: 12m</td></tr>
+                    <tr><td>225°:</td><td>D: 8m</td><td>T: 12m</td></tr>
+                    <tr><td>270°:</td><td>D: 12m</td><td>T: 13m</td></tr>
+                    <tr><td>315°:</td><td>D: 9m</td><td>T: 14m</td></tr>
+                </table>
+            </div>
+
+            <div class="sensor-section">
+                <div class="sensor-title">Yüksek Tavan (S-)</div>
+                <table>
+                    <tr><td>0°/360°:</td><td>D: 7m</td><td>T: 17m</td></tr>
+                    <tr><td>45°:</td><td>D: 11m</td><td>T: 15m</td></tr>
+                    <tr><td>90°:</td><td>D: 7m</td><td>T: 16m</td></tr>
+                    <tr><td>135°:</td><td>D: 7m</td><td>T: 16m</td></tr>
+                    <tr><td>180°:</td><td>D: 7m</td><td>T: 15m</td></tr>
+                    <tr><td>225°:</td><td>D: 6m</td><td>T: 14m</td></tr>
+                    <tr><td>270°:</td><td>D: 12m</td><td>T: 15m</td></tr>
+                    <tr><td>315°:</td><td>D: 6m</td><td>T: 14m</td></tr>
+                </table>
+            </div>
+
+            <div class="sensor-section">
+                <div class="sensor-title">Standart</div>
+                <table>
+                    <tr><td>0°/360°:</td><td>D: 3.2m</td><td>T: 8m</td></tr>
+                    <tr><td>45°:</td><td>D: 3.3m</td><td>T: 5.5m</td></tr>
+                    <tr><td>90°:</td><td>D: 3.3m</td><td>T: 8.2m</td></tr>
+                    <tr><td>135°:</td><td>D: 3m</td><td>T: 7.5m</td></tr>
+                    <tr><td>180°:</td><td>D: 3.2m</td><td>T: 7.5m</td></tr>
+                    <tr><td>225°:</td><td>D: 2.8m</td><td>T: 5.7m</td></tr>
+                    <tr><td>270°:</td><td>D: 3.2m</td><td>T: 9m</td></tr>
+                    <tr><td>315°:</td><td>D: 3.2m</td><td>T: 9m</td></tr>
+                </table>
+            </div>
+
+            <div class="sensor-section">
+                <div class="sensor-title">Koridor</div>
+                <table>
+                    <tr><td>0°/360°:</td><td>D: 2m</td><td>T: 7.5m</td></tr>
+                    <tr><td>45°:</td><td>D: 7.5m</td><td>T: 28m</td></tr>
+                    <tr><td>90°:</td><td>D: 4.7m</td><td>T: 12m</td></tr>
+                    <tr><td>135°:</td><td>D: 2m</td><td>T: 5.5m</td></tr>
+                    <tr><td>180°:</td><td>D: 4m</td><td>T: 8.5m</td></tr>
+                    <tr><td>225°:</td><td>D: 7.5m</td><td>T: 26m</td></tr>
+                    <tr><td>270°:</td><td>D: 4.5m</td><td>T: 13.5m</td></tr>
+                    <tr><td>315°:</td><td>D: 2.2m</td><td>T: 5m</td></tr>
+                    <tr><td>360°:</td><td>D: 2m</td><td>T: 7.5m</td></tr>
+                </table>
+            </div>
+
+            <div class="sensor-section">
+                <div class="sensor-title">Geniş Alan</div>
+                <table>
+                    <tr><td>0°/360°:</td><td>D: 8m</td><td>T: 15m</td></tr>
+                    <tr><td>45°:</td><td>D: 8m</td><td>T: 16m</td></tr>
+                    <tr><td>90°:</td><td>D: 8m</td><td>T: 15m</td></tr>
+                    <tr><td>135°:</td><td>D: 8m</td><td>T: 16m</td></tr>
+                    <tr><td>180°:</td><td>D: 8m</td><td>T: 15m</td></tr>
+                    <tr><td>225°:</td><td>D: 8m</td><td>T: 16m</td></tr>
+                    <tr><td>270°:</td><td>D: 8m</td><td>T: 15m</td></tr>
+                    <tr><td>315°:</td><td>D: 8m</td><td>T: 16m</td></tr>
+                </table>
+            </div>
+
+            <button id="resetButton" class="reset-button">
+                Başlangıç Değerlerine Döndür
+            </button>
+        </div>
+    </div>
+    <div id="tooltip" class="tooltip"></div>
+
+    <div class="confirmation-box" id="confirmationBox">
+        Değişiklikler kaydedildi ✓
+    </div>
+
+    <script>
+        // Başlangıç değerlerinin kopyalarını en başta sakla
+        const initialValues = {
+            spacer: [
+                { angle: 0, dikey: 9, teget: 13 },
+                { angle: 45, dikey: 7, teget: 14 },
+                { angle: 90, dikey: 10, teget: 14 },
+                { angle: 135, dikey: 7, teget: 13 },
+                { angle: 180, dikey: 9, teget: 12 },
+                { angle: 225, dikey: 8, teget: 12 },
+                { angle: 270, dikey: 12, teget: 13 },
+                { angle: 315, dikey: 9, teget: 14 },
+                { angle: 360, dikey: 9, teget: 13 }
+            ],
+            noSpacer: [
+                { angle: 0, dikey: 7, teget: 17 },
+                { angle: 45, dikey: 11, teget: 15 },
+                { angle: 90, dikey: 7, teget: 16 },
+                { angle: 135, dikey: 7, teget: 16 },
+                { angle: 180, dikey: 7, teget: 15 },
+                { angle: 225, dikey: 6, teget: 14 },
+                { angle: 270, dikey: 12, teget: 15 },
+                { angle: 315, dikey: 6, teget: 14 },
+                { angle: 360, dikey: 7, teget: 17 }
+            ],
+            standard: [
+                { angle: 0, dikey: 3.2, teget: 8 },
+                { angle: 45, dikey: 3.3, teget: 5.5 },
+                { angle: 90, dikey: 3.3, teget: 8.2 },
+                { angle: 135, dikey: 3, teget: 7.5 },
+                { angle: 180, dikey: 3.2, teget: 7.5 },
+                { angle: 225, dikey: 2.8, teget: 5.7 },
+                { angle: 270, dikey: 3.2, teget: 9 },
+                { angle: 315, dikey: 3.2, teget: 9 },
+                { angle: 360, dikey: 3.2, teget: 8 }
+            ],
+            corridor: [
+                { angle: 0, dikey: 2, teget: 7.5 },
+                { angle: 45, dikey: 7.5, teget: 28 },
+                { angle: 90, dikey: 4.7, teget: 12 },
+                { angle: 135, dikey: 2, teget: 5.5 },
+                { angle: 180, dikey: 4, teget: 8.5 },
+                { angle: 225, dikey: 7.5, teget: 26 },
+                { angle: 270, dikey: 4.5, teget: 13.5 },
+                { angle: 315, dikey: 2.2, teget: 5 },
+                { angle: 360, dikey: 2, teget: 7.5 }
+            ],
+            wide: [
+                { angle: 0, dikey: 9, teget: 15.5 },
+                { angle: 45, dikey: 8.5, teget: 16 },
+                { angle: 90, dikey: 5.5, teget: 16 },
+                { angle: 135, dikey: 4, teget: 16 },
+                { angle: 180, dikey: 7.5, teget: 14 },
+                { angle: 225, dikey: 8, teget: 14 },
+                { angle: 270, dikey: 6, teget: 14.5 },
+                { angle: 315, dikey: 8, teget: 15 },
+                { angle: 360, dikey: 9, teget: 15.5 }
+            ]
+        };
+
+        // Mevcut measurements değişkenlerini tanımla
+        const measurementsWithSpacer = JSON.parse(JSON.stringify(initialValues.spacer));
+        const measurementsNoSpacer = JSON.parse(JSON.stringify(initialValues.noSpacer));
+        const measurementsStandard = JSON.parse(JSON.stringify(initialValues.standard));
+        const measurementsCorridor = JSON.parse(JSON.stringify(initialValues.corridor));
+        const measurementsWide = JSON.parse(JSON.stringify(initialValues.wide));
+
+        let isLineStyleCurved = true;
+
+        function updateLineStyle(style) {
+            isLineStyleCurved = style === 'curved';
+            const activeTab = document.querySelector('.tab-button.active');
+            if (activeTab) {
+                switchTab(activeTab.getAttribute('onclick').match(/'(.*?)'/)[1]);
+            }
+        }
+
+        function switchTab(tabName) {
+            // Tüm tab butonlarını ve içerikleri pasif yap
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Seçilen tabı aktif yap
+            document.querySelector(`#${tabName}`).classList.add('active');
+            document.querySelector(`button[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+            // Tüm sensör bölümlerini gizle
+            document.querySelectorAll('.sensor-section').forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // Aktif sensörün bilgilerini göster
+            let measurements;
+            let sectionIndex;
+            
+            // Önce measurements'ı belirle
+            switch(tabName) {
+                case 'spacer':
+                    measurements = measurementsWithSpacer;
+                    sectionIndex = 0;
+                    break;
+                case 'no-spacer':
+                    measurements = measurementsNoSpacer;
+                    sectionIndex = 1;
+                    break;
+                case 'standard':
+                    measurements = measurementsStandard;
+                    sectionIndex = 2;
+                    break;
+                case 'corridor':
+                    measurements = measurementsCorridor;
+                    sectionIndex = 3;
+                    break;
+                case 'wide':
+                    measurements = measurementsWide;
+                    sectionIndex = 4;
+                    break;
+            }
+
+            // Doğru sensör bölümünü göster
+            const sections = document.querySelectorAll('.sensor-section');
+            if (sections[sectionIndex]) {
+                sections[sectionIndex].style.display = 'block';
+            }
+
+            // Min-max değerleri hesapla ve göster
+            if (measurements) {
+                const minDikey = Math.min(...measurements.map(m => m.dikey));
+                const maxDikey = Math.max(...measurements.map(m => m.dikey));
+                const minTeget = Math.min(...measurements.map(m => m.teget));
+                const maxTeget = Math.max(...measurements.map(m => m.teget));
+
+                // Min-max özet bilgisini güncelle
+                const activeSection = document.querySelector('.sensor-section[style="display: block;"]');
+                const minMaxSummary = document.createElement('div');
+                minMaxSummary.className = 'min-max-summary';
+                minMaxSummary.innerHTML = `
+                    Dikey Mesafe: ${minDikey}m (min) - ${maxDikey}m (max)<br>
+                    Teğet Mesafe: ${minTeget}m (min) - ${maxTeget}m (max)
+                `;
+
+                const existingSummary = activeSection.querySelector('.min-max-summary');
+                if (existingSummary) {
+                    existingSummary.replaceWith(minMaxSummary);
+                } else {
+                    activeSection.querySelector('.sensor-title').insertAdjacentElement('afterend', minMaxSummary);
+                }
+            }
+
+            // Grafiği çiz
+            if (tabName === 'spacer') {
+                drawSensorArea('sensorCanvas', measurementsWithSpacer, 25);
+            } else if (tabName === 'no-spacer') {
+                drawSensorArea('sensorCanvas2', measurementsNoSpacer, 20);
+            } else if (tabName === 'standard') {
+                drawSensorArea('sensorCanvas3', measurementsStandard, 30);
+            } else if (tabName === 'corridor') {
+                drawSensorArea('sensorCanvas4', measurementsCorridor, 15);
+            } else if (tabName === 'wide') {
+                drawSensorArea('sensorCanvas5', measurementsWide, 20);
+            }
+
+            // Tabloları düzenlenebilir yap (measurements belirlendikten sonra)
+            makeTableEditable();
+
+            // Ortam koşullarını güncelle
+            updateEnvironmentInfo(tabName);
+        }
+
+        function drawSensorArea(canvasId, measurements, customScale) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const scale = customScale || (canvasId === 'sensorCanvas2' ? 20 : 25);
+
+            // Canvas'ı temizle
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Koordinat sistemini çiz
+            drawCoordinateSystem(ctx, centerX, centerY);
+
+            // Açı çizgilerini çiz (diğer çizimlerin öncesinde)
+            ctx.beginPath();
+            measurements.forEach(point => {
+                const angleRad = (point.angle - 90) * Math.PI / 180;
+                // En uzun mesafenin 1.5 katı kadar uzunlukta çizgi çiz
+                const maxRadius = Math.max(point.dikey, point.teget) * scale * 1.5;
+                
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + maxRadius * Math.cos(angleRad),
+                    centerY + maxRadius * Math.sin(angleRad)
+                );
+            });
+            ctx.strokeStyle = 'rgba(150, 150, 150, 0.4)'; // Saydamlığı azalttık (0.2'den 0.4'e)
+            ctx.lineWidth = 1.5; // Çizgi kalınlığını artırdık
+            ctx.stroke();
+            ctx.lineWidth = 1; // Diğer çizimler için normal kalınlığa geri dön
+
+            // Dikey yaklaşım alanını çiz
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            measurements.forEach((point, index) => {
+                const radius = point.dikey * scale;
+                const angleRad = (point.angle - 90) * Math.PI / 180;
+                const x = centerX + radius * Math.cos(angleRad);
+                const y = centerY + radius * Math.sin(angleRad);
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    if (isLineStyleCurved) {
+                        // Oval çizgi için mevcut kod
+                        const prevPoint = measurements[index - 1];
+                        const prevRadius = prevPoint.dikey * scale;
+                        const prevAngleRad = (prevPoint.angle - 90) * Math.PI / 180;
+                        const prevX = centerX + prevRadius * Math.cos(prevAngleRad);
+                        const prevY = centerY + prevRadius * Math.sin(prevAngleRad);
+                        
+                        const midAngleRad = ((prevPoint.angle + point.angle) / 2 - 90) * Math.PI / 180;
+                        const midRadius = ((prevRadius + radius) / 2) * 1.2;
+                        const cp1x = centerX + midRadius * Math.cos(midAngleRad);
+                        const cp1y = centerY + midRadius * Math.sin(midAngleRad);
+                        
+                        ctx.quadraticCurveTo(cp1x, cp1y, x, y);
+                    } else {
+                        // Düz çizgi
+                        ctx.lineTo(x, y);
+                    }
+                }
+            });
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+            ctx.fill();
+
+            // Teğet yaklaşım alanı için de aynı mantık
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            measurements.forEach((point, index) => {
+                const radius = point.teget * scale;
+                const angleRad = (point.angle - 90) * Math.PI / 180;
+                const x = centerX + radius * Math.cos(angleRad);
+                const y = centerY + radius * Math.sin(angleRad);
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    if (isLineStyleCurved) {
+                        // Oval çizgi kodu
+                        const prevPoint = measurements[index - 1];
+                        const prevRadius = prevPoint.teget * scale;
+                        const prevAngleRad = (prevPoint.angle - 90) * Math.PI / 180;
+                        const prevX = centerX + prevRadius * Math.cos(prevAngleRad);
+                        const prevY = centerY + prevRadius * Math.sin(prevAngleRad);
+                        
+                        const midAngleRad = ((prevPoint.angle + point.angle) / 2 - 90) * Math.PI / 180;
+                        const midRadius = ((prevRadius + radius) / 2) * 1.2;
+                        const cp1x = centerX + midRadius * Math.cos(midAngleRad);
+                        const cp1y = centerY + midRadius * Math.sin(midAngleRad);
+                        
+                        ctx.quadraticCurveTo(cp1x, cp1y, x, y);
+                    } else {
+                        // Düz çizgi
+                        ctx.lineTo(x, y);
+                    }
+                }
+            });
+            ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
+            ctx.fill();
+
+            // Açı değerlerini yaz
+            drawAngleLabels(ctx, centerX, centerY, scale, measurements);
+
+            // Mouse olaylarını ekle
+            setupMouseEvents(canvas, measurements, scale);
+        }
+
+        function drawCoordinateSystem(ctx, centerX, centerY) {
+            // Daire çizgileri
+            [5, 10, 15].forEach(radius => {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 25, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#ccc';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                
+                // Tüm metre değerleri için aynı stil ve konum
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${radius}m`, centerX + radius * 25 + 10, centerY);
+            });
+
+            // Eksenler
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, ctx.canvas.height);
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(ctx.canvas.width, centerY);
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        function drawAngleLabels(ctx, centerX, centerY, scale, measurements) {
+            ctx.fillStyle = 'black';
+            ctx.font = '12px Arial';
+            measurements.forEach(point => {
+                if (point.angle < 360) { // 360 derecede etiket koymuyoruz
+                    const angleRad = (point.angle - 90) * Math.PI / 180;
+                    
+                    // Açıları kutunun kenarına yerleştir
+                    const radius = Math.max(point.dikey, point.teget) * scale;
+                    
+                    const x = centerX + radius * Math.cos(angleRad);
+                    const y = centerY + radius * Math.sin(angleRad);
+                    
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(`${point.angle}°`, x, y);
+                }
+            });
+        }
+
+        function setupMouseEvents(canvas, measurements, scale) {
+            const tooltip = document.getElementById('tooltip');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                // Mouse pozisyonunun merkeze göre açısını hesapla
+                let angle = Math.atan2(mouseY - centerY, mouseX - centerX) * 180 / Math.PI;
+                angle = (angle + 90 + 360) % 360; // 0-360 aralığına normalize et
+
+                // Mouse'un merkeze olan uzaklığını hesapla
+                const distance = Math.sqrt(
+                    Math.pow(mouseX - centerX, 2) + 
+                    Math.pow(mouseY - centerY, 2)
+                ) / scale;
+
+                // En yakın ölçüm noktasını bul
+                const closestPoint = measurements.reduce((prev, curr) => {
+                    const prevDiff = Math.abs(prev.angle - angle);
+                    const currDiff = Math.abs(curr.angle - angle);
+                    return prevDiff < currDiff ? prev : curr;
+                });
+
+                // Mouse'un hangi bölgede olduğunu kontrol et
+                const isDikey = distance <= closestPoint.dikey + 0.5;
+                const isTeget = distance <= closestPoint.teget + 0.5 && distance > closestPoint.dikey;
+
+                // Eğer mouse ölçüm noktalarının yakınındaysa tooltip'i göster
+                if (Math.abs(angle - closestPoint.angle) < 10) {
+                    if (isDikey) {
+                        // Dikey alan üzerinde
+                        tooltip.style.display = 'block';
+                        tooltip.style.left = (e.clientX + 10) + 'px';
+                        tooltip.style.top = (e.clientY + 10) + 'px';
+                        tooltip.innerHTML = `Açı: ${closestPoint.angle}°<br>
+                                           Dikey: ${closestPoint.dikey}m`;
+                    } else if (isTeget) {
+                        // Teğet alan üzerinde
+                        tooltip.style.display = 'block';
+                        tooltip.style.left = (e.clientX + 10) + 'px';
+                        tooltip.style.top = (e.clientY + 10) + 'px';
+                        tooltip.innerHTML = `Açı: ${closestPoint.angle}°<br>
+                                           Teğet: ${closestPoint.teget}m`;
+                    } else {
+                        tooltip.style.display = 'none';
+                    }
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            });
+
+            canvas.addEventListener('mouseout', () => {
+                tooltip.style.display = 'none';
+            });
+        }
+
+        function makeTableEditable() {
+            const tables = document.querySelectorAll('.sensor-section table');
+            tables.forEach((table, sectionIndex) => {
+                const rows = table.querySelectorAll('tr');
+                rows.forEach((row, rowIndex) => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 3) {
+                        // Aktif sekmeye göre doğru ölçümleri al
+                        const activeTab = document.querySelector('.tab-button.active');
+                        const tabName = activeTab.getAttribute('onclick').match(/'(.*?)'/)[1];
+                        let currentMeasurements;
+                        
+                        switch(tabName) {
+                            case 'spacer': currentMeasurements = measurementsWithSpacer; break;
+                            case 'no-spacer': currentMeasurements = measurementsNoSpacer; break;
+                            case 'standard': currentMeasurements = measurementsStandard; break;
+                            case 'corridor': currentMeasurements = measurementsCorridor; break;
+                            case 'wide': currentMeasurements = measurementsWide; break;
+                        }
+
+                        // Dikey değer için input oluştur
+                        const dikeyInput = document.createElement('input');
+                        dikeyInput.type = 'number';
+                        dikeyInput.step = '0.1';
+                        dikeyInput.min = '0';
+                        dikeyInput.style.width = '50px';
+                        dikeyInput.style.border = '1px solid #ccc';
+                        dikeyInput.style.padding = '2px';
+                        dikeyInput.value = currentMeasurements[rowIndex].dikey;
+
+                        // Teğet değer için input oluştur
+                        const tegetInput = document.createElement('input');
+                        tegetInput.type = 'number';
+                        tegetInput.step = '0.1';
+                        tegetInput.min = '0';
+                        tegetInput.style.width = '50px';
+                        tegetInput.style.border = '1px solid #ccc';
+                        tegetInput.style.padding = '2px';
+                        tegetInput.value = currentMeasurements[rowIndex].teget;
+
+                        // Hücreleri temizle ve inputları ekle
+                        cells[1].innerHTML = 'D: ';
+                        cells[1].appendChild(dikeyInput);
+                        cells[1].appendChild(document.createTextNode('m'));
+
+                        cells[2].innerHTML = 'T: ';
+                        cells[2].appendChild(tegetInput);
+                        cells[2].appendChild(document.createTextNode('m'));
+
+                        // Değişiklikleri dinle
+                        [dikeyInput, tegetInput].forEach((input, index) => {
+                            input.addEventListener('input', function() {
+                                const value = parseFloat(this.value);
+                                if (this.value === '') {
+                                    return;
+                                }
+                                if (!isNaN(value) && value >= 0) {
+                                    // Doğrudan measurements'ı güncelle
+                                    if (index === 0) {
+                                        currentMeasurements[rowIndex].dikey = value;
+                                    } else {
+                                        currentMeasurements[rowIndex].teget = value;
+                                    }
+
+                                    // Grafiği güncelle
+                                    const activeTab = document.querySelector('.tab-button.active');
+                                    if (activeTab) {
+                                        const tabName = activeTab.getAttribute('onclick').match(/'(.*?)'/)[1];
+                                        let canvasId, scale;
+                                        switch(tabName) {
+                                            case 'spacer': canvasId = 'sensorCanvas'; scale = 25; break;
+                                            case 'no-spacer': canvasId = 'sensorCanvas2'; scale = 20; break;
+                                            case 'standard': canvasId = 'sensorCanvas3'; scale = 30; break;
+                                            case 'corridor': canvasId = 'sensorCanvas4'; scale = 15; break;
+                                            case 'wide': canvasId = 'sensorCanvas5'; scale = 20; break;
+                                        }
+                                        drawSensorArea(canvasId, currentMeasurements, scale);
+                                    }
+                                }
+                            });
+                        });
+                    }
+                });
+            });
+        }
+
+        function updateMeasurements() {
+            const activeTab = document.querySelector('.tab-button.active');
+            if (!activeTab) return;
+
+            const tabName = activeTab.getAttribute('onclick').match(/'(.*?)'/)[1];
+            const activeSection = document.querySelector('.sensor-section[style="display: block;"]');
+            if (!activeSection) return;
+
+            const rows = activeSection.querySelectorAll('table tr');
+            const newMeasurements = [];
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 3) {
+                    const angle = parseInt(cells[0].textContent);
+                    const dikeySpan = cells[1].querySelector('span');
+                    const tegetSpan = cells[2].querySelector('span');
+                    
+                    if (dikeySpan && tegetSpan) {
+                        const dikey = parseFloat(dikeySpan.textContent);
+                        const teget = parseFloat(tegetSpan.textContent);
+                        
+                        if (!isNaN(dikey) && !isNaN(teget)) {
+                            newMeasurements.push({ angle, dikey, teget });
+                        }
+                    }
+                }
+            });
+
+            if (newMeasurements.length === 0) return;
+
+            // Ölçümleri güncelle
+            let measurements;
+            let canvasId;
+            let scale;
+
+            switch(tabName) {
+                case 'spacer':
+                    measurementsWithSpacer = [...newMeasurements];
+                    measurements = measurementsWithSpacer;
+                    canvasId = 'sensorCanvas';
+                    scale = 25;
+                    break;
+                case 'no-spacer':
+                    measurementsNoSpacer = [...newMeasurements];
+                    measurements = measurementsNoSpacer;
+                    canvasId = 'sensorCanvas2';
+                    scale = 20;
+                    break;
+                case 'standard':
+                    measurementsStandard = [...newMeasurements];
+                    measurements = measurementsStandard;
+                    canvasId = 'sensorCanvas3';
+                    scale = 30;
+                    break;
+                case 'corridor':
+                    measurementsCorridor = [...newMeasurements];
+                    measurements = measurementsCorridor;
+                    canvasId = 'sensorCanvas4';
+                    scale = 15;
+                    break;
+                case 'wide':
+                    measurementsWide = [...newMeasurements];
+                    measurements = measurementsWide;
+                    canvasId = 'sensorCanvas5';
+                    scale = 20;
+                    break;
+            }
+
+            // Grafiği güncelle
+            if (measurements && canvasId) {
+                drawSensorArea(canvasId, measurements, scale);
+            }
+
+            // Min-max değerlerini güncelle
+            const minDikey = Math.min(...measurements.map(m => m.dikey));
+            const maxDikey = Math.max(...measurements.map(m => m.dikey));
+            const minTeget = Math.min(...measurements.map(m => m.teget));
+            const maxTeget = Math.max(...measurements.map(m => m.teget));
+
+            // Tablodaki min-max etiketlerini güncelle
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 3) {
+                    const dikeySpan = cells[1].querySelector('span');
+                    const tegetSpan = cells[2].querySelector('span');
+                    
+                    if (dikeySpan && tegetSpan) {
+                        const dikeyValue = parseFloat(dikeySpan.textContent);
+                        const tegetValue = parseFloat(tegetSpan.textContent);
+                        
+                        cells[1].innerHTML = `D: <span contenteditable="true">${dikeyValue}</span>m${dikeyValue === minDikey ? ' (min)' : dikeyValue === maxDikey ? ' (max)' : ''}`;
+                        cells[2].innerHTML = `T: <span contenteditable="true">${tegetValue}</span>m${tegetValue === minTeget ? ' (min)' : tegetValue === maxTeget ? ' (max)' : ''}`;
+                    }
+                }
+            });
+
+            // Min-max özet bilgisini güncelle
+            const minMaxSummary = activeSection.querySelector('.min-max-summary');
+            if (minMaxSummary) {
+                minMaxSummary.innerHTML = `
+                    Dikey Mesafe: ${minDikey}m (min) - ${maxDikey}m (max)<br>
+                    Teğet Mesafe: ${minTeget}m (min) - ${maxTeget}m (max)
+                `;
+            }
+        }
+
+        function showConfirmation() {
+            const confirmationBox = document.getElementById('confirmationBox');
+            confirmationBox.style.display = 'block';
+            confirmationBox.style.animation = 'none';
+            confirmationBox.offsetHeight; // Reflow
+            confirmationBox.style.animation = 'fadeOut 2s ease-in-out';
+            setTimeout(() => {
+                confirmationBox.style.display = 'none';
+            }, 2000);
+        }
+
+        // Reset butonu için event listener
+        document.getElementById('resetButton').addEventListener('click', function() {
+            const activeTab = document.querySelector('.tab-button.active');
+            if (activeTab) {
+                const tabName = activeTab.getAttribute('onclick').match(/'(.*?)'/)[1];
+                
+                // Aktif sekmenin değerlerini başlangıç değerlerine sıfırla
+                switch(tabName) {
+                    case 'spacer':
+                        measurementsWithSpacer = JSON.parse(JSON.stringify(initialValues.spacer));
+                        drawSensorArea('sensorCanvas', measurementsWithSpacer, 25);
+                        break;
+                    case 'no-spacer':
+                        measurementsNoSpacer = JSON.parse(JSON.stringify(initialValues.noSpacer));
+                        drawSensorArea('sensorCanvas2', measurementsNoSpacer, 20);
+                        break;
+                    case 'standard':
+                        measurementsStandard = JSON.parse(JSON.stringify(initialValues.standard));
+                        drawSensorArea('sensorCanvas3', measurementsStandard, 30);
+                        break;
+                    case 'corridor':
+                        measurementsCorridor = JSON.parse(JSON.stringify(initialValues.corridor));
+                        drawSensorArea('sensorCanvas4', measurementsCorridor, 15);
+                        break;
+                    case 'wide':
+                        measurementsWide = JSON.parse(JSON.stringify(initialValues.wide));
+                        drawSensorArea('sensorCanvas5', measurementsWide, 20);
+                        break;
+                }
+
+                // Tabloyu güncelle
+                makeTableEditable();
+
+                // Onay mesajını göster
+                const confirmationBox = document.getElementById('confirmationBox');
+                confirmationBox.innerHTML = 'Değerler başlangıç durumuna döndürüldü ✓';
+                confirmationBox.style.display = 'block';
+                confirmationBox.style.animation = 'none';
+                confirmationBox.offsetHeight;
+                confirmationBox.style.animation = 'fadeOut 2s ease-in-out';
+                setTimeout(() => {
+                    confirmationBox.style.display = 'none';
+                    confirmationBox.innerHTML = 'Değişiklikler kaydedildi ✓';
+                }, 2000);
+            }
+        });
+
+        // Sayfa yüklendiğinde ilk tabı çiz
+        window.onload = () => {
+            // İlk yükleme için grafiği hemen çiz
+            drawSensorArea('sensorCanvas', measurementsWithSpacer, 25);
+            // Sonra switchTab'ı çağır
+            switchTab('spacer');
+            makeTableEditable(); // Tabloları düzenlenebilir yap
+        };
+
+        // Canvas'ı PNG olarak kaydetmek için fonksiyon
+        function downloadCanvasAsPNG(canvasId, fileName) {
+            const canvas = document.getElementById(canvasId);
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = image;
+            link.click();
+        }
+
+        // Her sensör için indirme butonu ekle
+        const downloadButtons = `
+            <button onclick="downloadCanvasAsPNG('sensorCanvas', 'yuksek_tavan_s.png')">Yüksek Tavan (S) İndir</button>
+            <button onclick="downloadCanvasAsPNG('sensorCanvas2', 'yuksek_tavan_s_minus.png')">Yüksek Tavan (S-) İndir</button>
+            <button onclick="downloadCanvasAsPNG('sensorCanvas3', 'standart.png')">Standart İndir</button>
+            <button onclick="downloadCanvasAsPNG('sensorCanvas4', 'koridor.png')">Koridor İndir</button>
+            <button onclick="downloadCanvasAsPNG('sensorCanvas5', 'genis_alan.png')">Geniş Alan İndir</button>
+        `;
+
+        // Butonları sayfaya ekle
+        document.querySelector('.controls').innerHTML += downloadButtons;
+
+        // Environment box'ın içeriğini güncelle
+        function updateEnvironmentInfo(tabName) {
+            const envBox = document.querySelector('.environment-box');
+            if (tabName === 'wide') {
+                envBox.innerHTML = `
+                    <h3>Ortam Koşulları</h3>
+                    <p>Sıcaklık: 16.1°C</p>
+                    <p>Işık Şiddeti: 34 lux</p>
+                    <p>Montaj Yüksekliği: 2,5m</p>
+                `;
+            } else {
+                envBox.innerHTML = `
+                    <h3>Ortam Koşulları</h3>
+                    <p>Sıcaklık: 17,3°C</p>
+                    <p>Işık Şiddeti: 27 lux</p>
+                    <p>Montaj Yüksekliği: 2,5m</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html> 
